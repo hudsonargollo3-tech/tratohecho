@@ -31,11 +31,15 @@ jobs:
       - name: Build Next.js
         run: npm run build
 
+      - name: Setup Wrangler auth
+        run: |
+          mkdir -p ~/.config/.wrangler/config
+          cat > ~/.config/.wrangler/config/default.toml << TOKEN_EOF
+          oauth_token = "${{ secrets.CF_OAUTH_TOKEN }}"
+          expiration_time = "2030-01-01T00:00:00.000Z"
+          refresh_token = "${{ secrets.CF_REFRESH_TOKEN }}"
+          scopes = ["pages:write", "account:read", "user:read"]
+          TOKEN_EOF
+
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=trato-hecho
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          commitHash: ${{ github.sha }}
+        run: npx --yes wrangler@3 pages deploy out --project-name=trato-hecho --commit-dirty=true
